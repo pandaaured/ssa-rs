@@ -16,13 +16,16 @@ pub mod tests {
     ///   let x = x + 1
     ///   x
     /// --- END BLOCK ---
-    fn cfg_to_ssa_adder() {
+    fn cfg_adder() {
         let a = VarID(0);
         let x = VarID(1);
         let entry = BlockID(0);
 
         let added_to_value= Operand::cfg_new_int(1);
         let added_to_value_two= Operand::cfg_new_int(1);
+
+        let add_instr_one = Instruction::add(x, Operand::Value(a), added_to_value);
+        let add_instr_two = Instruction::add(x, Operand::Value(x), added_to_value_two);
 
         let data = Function {
             id: FunctionID(0),
@@ -31,17 +34,7 @@ pub mod tests {
             entry,
             blocks: vec![CFGBasicBlock {
                 id: entry,
-                instructions: vec![
-                    Instruction::Add {
-                        dest: x,
-                        lhs: Operand::Value(a),
-                        rhs: added_to_value,
-                    },
-                    Instruction::Add {
-                        dest: x,
-                        lhs: Operand::Value(x),
-                        rhs: added_to_value_two                    },
-                ],
+                instructions: vec![ add_instr_one, add_instr_two],
                 terminator: Terminator::Return(Some(Operand::Value(x))),
             }],
             value_types: HashMap::from([
@@ -64,7 +57,7 @@ pub mod tests {
     /// other depending on the value. Obviously, this should only ever return
     /// one of these paths. Writing this program now so it can be optimized
     /// later.
-    fn cfg_to_ssa_cond() {
+    fn cfg_cond_const() {
         // Basic blocks composing our program.
         let entry = BlockID(0);
         let exitfalse = BlockID(1);
@@ -100,7 +93,4 @@ pub mod tests {
             ])
         };
     }
-
-
-
 }

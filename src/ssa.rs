@@ -203,13 +203,14 @@ pub struct CFGBasicBlock {
 }
 
 impl CFGBasicBlock {
+    /// Given a block ID and a value, set your block to contain only a terminator
+    /// with a return instruction of a constant type.
     pub fn new_terminator_return_const(id: BlockID, value: i64) -> Self {
         Self { id, 
             instructions: vec![], 
             terminator: Terminator::Return(Some(Operand::Constant { ty: Type::Int, value }))
         }
     }
-
 }
 
 
