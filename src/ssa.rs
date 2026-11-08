@@ -45,9 +45,9 @@
 //! }
 //!
 
-use std::{collections::HashMap};
+use std::collections::{HashMap, HashSet};
 
-// A unique identifier for each variable in a CFG representation of a program.
+/// A unique identifier for each variable in a CFG representation of a program.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct VarID(pub u32);
 
@@ -56,7 +56,6 @@ pub struct VarID(pub u32);
 pub struct ValueID(pub u32);
 
 /// A unique identifier for each basic block in an SSA program.
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct BlockID(pub u32);
 
@@ -103,6 +102,29 @@ pub struct Function<Id, Block> {
     pub value_types: HashMap<Id, Type>
 }
 
+impl CFGFunction {
+    /// Given a list of blocks in a function, return a map of which blocks are
+    /// predecessors of other blocks for generation of phi functions.
+    pub fn predecessors(&self) -> HashMap<BlockID, HashSet<BlockID>> {
+        let mut predecessors: HashMap<BlockID, HashSet<BlockID>> = HashMap::new();
+        for block in &self.blocks {
+            match &block.terminator {
+                Terminator::Return(_) => {}
+                Terminator::Branch(target) => {
+                    predecessors.entry(*target).or_default().insert(block.id);
+                }
+                Terminator::ConditionalBranch { then_block, else_block, .. } =>
+                {
+                    predecessors.entry(*then_block).or_default().insert(block.id);
+                    predecessors.entry(*else_block).or_default().insert(block.id);
+                }
+            }
+        }
+
+        predecessors
+    }
+}
+
 /// Operands for instructions. For reference, the definition of an operand per
 /// `en.wikipedia.org/wiki/Operand` is "the object of a mathematical operation".
 /// Hence, Instructions like add act on operands (2 + 2)
@@ -140,39 +162,57 @@ pub enum Type {
 
 
 /// We make instructions generic over the CFG and SSA representations of our
-/// programs.
-macro_rules! def_binary_instructions {
-    ($($method:ident => $variant:ident),+ $(,)?) => {
+/// programs. We have the following instructions in our SSA language:
+macro_rules! def_instructions {
+    (
+        $(
+            $method:ident => $variant:ident(
+                $($operand:ident),+ $(,)?
+            )
+        ),+ $(,)?
+    ) => {
         pub enum Instruction<Id> {
             $(
                 $variant {
                     dest: Id,
-                    lhs: Operand<Id>,
-                    rhs: Operand<Id>,
+                    $(
+                        $operand: Operand<Id>,
+                    )+
                 },
             )+
         }
+
         impl<Id> Instruction<Id> {
             $(
                 pub fn $method(
                     dest: Id,
-                    lhs: Operand<Id>,
-                    rhs: Operand<Id>,
+                    $(
+                        $operand: Operand<Id>,
+                    )+
                 ) -> Self {
-                    Self::$variant { dest, lhs, rhs }
+                    Self::$variant {
+                        dest,
+                        $($operand,)+
+                    }
                 }
             )+
         }
     };
 }
 
-def_binary_instructions! {
-    add => Add,
-    sub => Sub,
-    mul => Mul,
-    equal => Equal,
-    less => Less,
-    greater => Greater
+def_instructions! {
+    add => Add(lhs, rhs),
+    sub => Sub(lhs, rhs),
+    mul => Mul(lhs, rhs),
+    div => Div(lhs, rhs),
+    eq => Eq(lhs, rhs),
+    lt => Lt(lhs, rhs),
+    gt => Gt(lhs, rhs),
+    leq => Leq(lhs, rhs),
+    geq => Geq(lhs, rhs),
+
+    neg => Neg(op),
+    not => Not(op)
 }
 
 
