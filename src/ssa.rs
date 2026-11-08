@@ -47,6 +47,9 @@
 
 use std::collections::{HashMap, HashSet};
 
+use crate::instructions::Instruction;
+use crate::types::Type;
+
 /// A unique identifier for each variable in a CFG representation of a program.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct VarID(pub u32);
@@ -86,7 +89,7 @@ pub type SSAFunction = Function<ValueID, BasicBlock>;
 ///   ret i32 %add
 /// }
 ///
-/// The return type is i32 in LLVM IR, so we communicate this by using Type::Int
+/// The return type is i32 in LLVM IR, so we communicate this by using Type::I32
 /// as the return_type field's value.
 pub struct Function<Id, Block> {
     /// The unique identifier corresponding to the function defined in the given module.
@@ -142,78 +145,17 @@ pub enum Operand<Id> {
 }
 
 impl Operand<VarID> {
-    pub fn cfg_new_int(value: i64) -> Self {
-        Self::Constant { ty: Type::Int, value }
+    pub fn cfg_new_i64(value: i64) -> Self {
+        Self::Constant { ty: Type::I64, value }
     }
 }
 
 impl Operand<ValueID> {
-    pub fn ssa_new_int(value: i64) -> Self {
-        Self::Constant { ty: Type::Int, value }
+    pub fn ssa_new_i64(value: i64) -> Self {
+        Self::Constant { ty: Type::I64, value }
     }
 }
 
-pub enum Type {
-    Int,
-    Pointer,
-    Void,
-    Bool
-}
-
-
-/// We make instructions generic over the CFG and SSA representations of our
-/// programs. We have the following instructions in our SSA language:
-macro_rules! def_instructions {
-    (
-        $(
-            $method:ident => $variant:ident(
-                $($operand:ident),+ $(,)?
-            )
-        ),+ $(,)?
-    ) => {
-        pub enum Instruction<Id> {
-            $(
-                $variant {
-                    dest: Id,
-                    $(
-                        $operand: Operand<Id>,
-                    )+
-                },
-            )+
-        }
-
-        impl<Id> Instruction<Id> {
-            $(
-                pub fn $method(
-                    dest: Id,
-                    $(
-                        $operand: Operand<Id>,
-                    )+
-                ) -> Self {
-                    Self::$variant {
-                        dest,
-                        $($operand,)+
-                    }
-                }
-            )+
-        }
-    };
-}
-
-def_instructions! {
-    add => Add(lhs, rhs),
-    sub => Sub(lhs, rhs),
-    mul => Mul(lhs, rhs),
-    div => Div(lhs, rhs),
-    eq => Eq(lhs, rhs),
-    lt => Lt(lhs, rhs),
-    gt => Gt(lhs, rhs),
-    leq => Leq(lhs, rhs),
-    geq => Geq(lhs, rhs),
-
-    neg => Neg(op),
-    not => Not(op)
-}
 
 
 pub type CFGInstruction = Instruction<VarID>;
@@ -245,10 +187,10 @@ pub struct CFGBasicBlock {
 impl CFGBasicBlock {
     /// Given a block ID and a value, set your block to contain only a terminator
     /// with a return instruction of a constant type.
-    pub fn new_terminator_return_const(id: BlockID, value: i64) -> Self {
+    pub fn new_terminator_return_i64(id: BlockID, value: i64) -> Self {
         Self { id, 
             instructions: vec![], 
-            terminator: Terminator::Return(Some(Operand::Constant { ty: Type::Int, value }))
+            terminator: Terminator::Return(Some(Operand::Constant { ty: Type::I64, value }))
         }
     }
 }
