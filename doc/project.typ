@@ -28,3 +28,15 @@ begins in the function (stored as a unique identifier); a *list of basic
 blocks* which contain all of the instructions which determine the function's
 behavior; a *value types map* which associates every value identifier with
 a type.
+
+*Types* are tags which determine the behavior of expressions in our language
+and provide constraints on the operations we are allowed to perform to guarantee
+safety. Our IR currently implements the following types: `I1` (which acts as
+a boolean), `I8`, `I16`, `I32`, `I64`, `void`, `null`. Please note that the
+integer types can act as both signed and unsigned: the semantics depend on the
+instruction that is used as opposed to the information contained in the type.
+
+*Instructions* are the key unit which determines the bahvior of our program.
+They are what perform operations on data and transfer of data to new locations
+in memory. We aim to preserve the semantics of instructions from LLVM IR as
+specified in the LLVM Language Reference. 
